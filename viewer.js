@@ -103,6 +103,7 @@ color:var(--t2);font-family:inherit;white-space:nowrap}
 
 /* VIEW BTNS */
 .vb.on{background:#fff;color:var(--pri);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.vb-fav.on{color:#ef4444;background:rgba(239,68,68,.1)}
 
 /* SEARCH */
 .search-box{flex:1;min-width:180px;position:relative}
@@ -141,6 +142,16 @@ color:var(--t2);font-family:inherit;white-space:nowrap}
 .photos.g1 .pi{aspect-ratio:16/10;max-height:450px}
 .pi img{width:100%;height:100%;object-fit:cover;transition:transform .3s;display:block}
 .pi:hover img{transform:scale(1.03)}
+.fav-btn{position:absolute;bottom:.5rem;right:.5rem;width:32px;height:32px;border-radius:50%;
+  background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;border:none;box-shadow:0 2px 6px rgba(0,0,0,.15);z-index:5;transition:all .2s;
+  font-size:1.1rem;color:#d1d5db;user-select:none}
+.fav-btn:hover{transform:scale(1.1);background:#fff}
+.fav-btn.on{color:#ef4444}
+.fav-btn.on::after{content:'❤️'}
+.fav-btn:not(.on)::after{content:'🤍'}
+.fav-btn.pulse{animation:pulse .3s ease-out}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
 
 .msgs{padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.55rem}
 .mb{border-radius:11px;padding:.75rem 1rem}
@@ -247,6 +258,8 @@ display:flex;align-items:center;justify-content:center}
         <input type="text" placeholder="메시지 검색..." oninput="onSearch(this.value)">
       </div>
       <div class="vbtns">
+        <button class="vb" id="favToggle" onclick="toggleFavFilter(this)">🤍</button>
+        <div style="width:1px;height:1.2rem;background:var(--border);margin:0 .2rem"></div>
         <button class="vb on" data-v="timeline" onclick="setView('timeline',this)">📋</button>
         <button class="vb" data-v="gallery" onclick="setView('gallery',this)">🖼️</button>
         <button class="vb" data-v="slideshow" onclick="startSlideshow()">▶️</button>
@@ -278,7 +291,7 @@ display:flex;align-items:center;justify-content:center}
           <div class="card-d">${n.date.slice(5)}<span class="dw">${dw}</span></div>
           <div class="bds">${pc ? `<span class="bd bd-p">📸 ${pc}</span>` : ''}${n.teacherMessage ? '<span class="bd bd-m">✉️</span>' : ''}</div>
         </div>
-        ${pc ? `<div class="photos ${gc}">${n.photos.map((p, i) => `<div class="pi" onclick="openLB('${n.date}',${i})"><img src="${p}" loading="lazy"></div>`).join('')}</div>` : ''}
+        ${pc ? `<div class="photos ${gc}">${n.photos.map((p, i) => `<div class="pi" onclick="openLB('${n.date}',${i})"><img src="${p}" loading="lazy"><button class="fav-btn" data-url="${p}" onclick="handleFav(event, this)"></button></div>`).join('')}</div>` : ''}
         ${n.teacherMessage || n.parentMessage ? `<div class="msgs">
           ${n.teacherMessage ? `<div class="mb mb-t"><div class="mb-l">👩‍🏫 선생님</div><div class="mb-tx">${esc(n.teacherMessage)}</div></div>` : ''}
           ${n.parentMessage ? `<div class="mb mb-p"><div class="mb-l">🏠 가정</div><div class="mb-tx">${esc(n.parentMessage)}</div></div>` : ''}
@@ -292,7 +305,7 @@ display:flex;align-items:center;justify-content:center}
   <!-- GALLERY -->
   <div id="vGallery" class="hidden">
     <div class="gal-grid">${allPhotos.map((p, i) =>
-    `<div class="gi" data-y="${p.date.substring(0, 4)}" data-m="${p.date.substring(5, 7)}" data-msg="${esc(p.msg || '')}" onclick="openLBG(${i})"><img src="${p.src}" loading="lazy"><div class="gd">${p.date.slice(5)}</div></div>`
+    `<div class="gi" data-y="${p.date.substring(0, 4)}" data-m="${p.date.substring(5, 7)}" data-msg="${esc(p.msg || '')}" data-url="${p.src}" onclick="openLBG(${i})"><img src="${p.src}" loading="lazy"><div class="gd">${p.date.slice(5)}</div><button class="fav-btn" data-url="${p.src}" onclick="handleFav(event, this)"></button></div>`
   ).join('')}</div>
   </div>
 </div>
@@ -339,7 +352,37 @@ const PD=${JSON.stringify(notifications.reduce((a, n) => { a[n.date] = n.photos;
 const AP=${JSON.stringify(allPhotos)};
 const YEARS=${JSON.stringify(years, null, 0)};
 
-let curYear='all', curMonth='all', curView='timeline', curSearch='';
+let curYear='all', curMonth='all', curView='timeline', curSearch='', curFavOnly=false;
+
+// ── FAVORITES ──
+let FAVS = new Set(JSON.parse(localStorage.getItem('puruni_favs') || '[]'));
+function saveFavs() { localStorage.setItem('puruni_favs', JSON.stringify([...FAVS])); }
+
+function handleFav(e, btn) {
+  e.stopPropagation();
+  const url = btn.dataset.url;
+  if (FAVS.has(url)) FAVS.delete(url); else FAVS.add(url);
+  btn.classList.toggle('on', FAVS.has(url));
+  btn.classList.add('pulse');
+  setTimeout(() => btn.classList.remove('pulse'), 300);
+  saveFavs();
+  // Sync other buttons with same URL
+  document.querySelectorAll(\`.fav-btn[data-url="\${url}"]\`).forEach(b => b.classList.toggle('on', FAVS.has(url)));
+  if (curFavOnly) applyFilter();
+}
+
+function toggleFavFilter(btn) {
+  curFavOnly = !curFavOnly;
+  btn.classList.toggle('on', curFavOnly);
+  btn.textContent = curFavOnly ? '❤️' : '🤍';
+  applyFilter();
+}
+
+function initFavs() {
+  document.querySelectorAll('.fav-btn').forEach(b => {
+    if (FAVS.has(b.dataset.url)) b.classList.add('on');
+  });
+}
 
 // ── SEARCH ──
 function onSearch(val) {
@@ -388,19 +431,27 @@ function applyFilter() {
     g.querySelectorAll('.card').forEach(c => {
       const txt = c.innerText.toLowerCase();
       const sOk = !curSearch || txt.includes(curSearch);
-      c.classList.toggle('hidden', !sOk);
-      if (sOk) gHasMatch = true;
+      
+      let fOk = true;
+      if (curFavOnly) {
+        fOk = false;
+        c.querySelectorAll('.fav-btn').forEach(b => { if (FAVS.has(b.dataset.url)) fOk = true; });
+      }
+
+      const isVisible = sOk && fOk;
+      c.classList.toggle('hidden', !isVisible);
+      if (isVisible) gHasMatch = true;
     });
 
     g.style.display=(yOk&&mOk&&gHasMatch)?'':'none';
   });
   // Gallery
-  const visArray = [];
   document.querySelectorAll('.gi').forEach(g=>{
     const yOk=curYear==='all'||g.dataset.y===curYear;
     const mOk=curMonth==='all'||g.dataset.m===curMonth;
     const sOk=!curSearch || (g.dataset.msg && g.dataset.msg.toLowerCase().includes(curSearch));
-    g.style.display=(yOk&&mOk&&sOk)?'':'none';
+    const fOk=!curFavOnly || FAVS.has(g.dataset.url);
+    g.style.display=(yOk&&mOk&&sOk&&fOk)?'':'none';
   });
 }
 
@@ -441,7 +492,8 @@ function getFilteredPhotos(){
     const yOk=curYear==='all'||p.date.substring(0,4)===curYear;
     const mOk=curMonth==='all'||p.date.substring(5,7)===curMonth;
     const sOk=!curSearch || (p.msg && p.msg.toLowerCase().includes(curSearch));
-    return yOk&&mOk&&sOk;
+    const fOk=!curFavOnly || FAVS.has(p.src);
+    return yOk&&mOk&&sOk&&fOk;
   });
 }
 function startSlideshow(){
@@ -512,7 +564,8 @@ document.addEventListener('keydown',e=>{
 // ── SCROLL ──
 window.addEventListener('scroll',()=>document.getElementById('toTop').classList.toggle('show',window.scrollY>400));
 
-// Init month pills
+// Init favs and month pills
+initFavs();
 buildMonthPills();
 </script>
 </body></html>`;
