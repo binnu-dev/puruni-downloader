@@ -106,13 +106,18 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all 0.
 .fav-toggle-btn:hover { background: var(--bg); }
 .fav-toggle-btn.on { border-color: var(--fav); color: var(--fav); background: var(--fav-bg); }
 
-/* PILLS */
-.pill-group { display: flex; align-items: center; gap: 0.5rem; overflow-x: auto; scrollbar-width: none; }
-.pill-group::-webkit-scrollbar { display: none; }
+/* PILLS & BUTTONS */
+.pill-group { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .pill-label { font-size: 0.75rem; font-weight: 700; color: var(--t3); text-transform: uppercase; margin-right: 0.5rem; flex-shrink: 0; }
-.pill { padding: 0.4rem 1rem; border-radius: 99px; font-size: 0.85rem; font-weight: 600; background: transparent; color: var(--t2); border: 1px solid transparent; white-space: nowrap; }
-.pill:hover { background: var(--border); }
+.pill { padding: 0.4rem 0.9rem; border-radius: 99px; font-size: 0.8rem; font-weight: 600; background: white; color: var(--t2); border: 1px solid var(--border); white-space: nowrap; }
+.pill:hover { background: var(--bg); border-color: var(--t3); }
 .pill.on { background: var(--t1); color: white; border-color: var(--t1); }
+
+.sort-btn { height: 44px; padding: 0 1rem; border-radius: 14px; background: white; border: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.85rem; color: var(--t2); cursor: pointer; }
+.sort-btn:hover { background: var(--bg); }
+
+.highlight { background: #ffef3b; color: #000; font-weight: 700; border-radius: 2px; padding: 0 2px; }
+mark.highlight { background: #ffef3b; }
 
 /* VIEW SWITCH */
 .view-switch { display: flex; background: var(--bg); padding: 4px; border-radius: 12px; border: 1px solid var(--border); }
@@ -254,11 +259,14 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all 0.
         <span class="search-icon">🔍</span>
         <input type="text" placeholder="메시지 키워드 검색..." oninput="onSearch(this.value)">
       </div>
+      <button class="sort-btn" id="sortBtn" onclick="toggleSort()">
+        <span id="sortIcon">🔽</span> <span id="sortText">최신순</span>
+      </button>
       <button class="fav-toggle-btn" id="favFilterBtn" onclick="toggleFavFilter()">
-        <span id="favFilterIcon">🤍</span> <span id="favFilterText">전체 보기</span>
+        <span id="favFilterIcon">🤍</span> <span id="favFilterText">찜한 전용</span>
       </button>
     </div>
-    <div class="tb-bottom">
+    <div class="tb-bottom" style="flex-wrap: wrap; height: auto;">
       <span class="pill-label">📅 필터</span>
       <div class="pill-group" id="yearPills">
         <button class="pill on" onclick="pickYear('all', this)">모든 연도</button>
@@ -367,10 +375,18 @@ const PD = ${JSON.stringify(notifications.reduce((a, n) => { a[n.date] = n.photo
 const AP = ${JSON.stringify(allPhotos)};
 const YEARS = ${JSON.stringify(years, null, 0)};
 
-let curYear='all', curMonth='all', curView='timeline', curSearch='', curFavOnly=false;
+let curYear='all', curMonth='all', curView='timeline', curSearch='', curFavOnly=false, curSort='desc';
 let overlayMode = 'lb'; // 'lb' or 'ss'
 let overlayIdx = 0;
 let overlayPhotos = [];
+
+// CACHE FOR HIGHLIGHTING
+const MSG_CACHE = new Map();
+document.querySelectorAll('.bubble-text').forEach((el, i) => {
+  const id = 'msg-' + i;
+  el.dataset.msgId = id;
+  MSG_CACHE.set(id, el.innerText);
+});
 
 // FAVORITES
 let FAVS = new Set(JSON.parse(localStorage.getItem('puruni_favs') || '[]'));
@@ -405,16 +421,48 @@ function updateHeartUI(url) {
   if (curFavOnly) applyFilter();
 }
 
-function toggleFavFilter() {
-  curFavOnly = !curFavOnly;
-  const btn = document.getElementById('favFilterBtn');
-  btn.classList.toggle('on', curFavOnly);
-  document.getElementById('favFilterIcon').textContent = curFavOnly ? '❤️' : '🤍';
-  document.getElementById('favFilterText').textContent = curFavOnly ? '찜한 사진만' : '전체 보기';
-  applyFilter();
+function toggleSort() {
+  curSort = curSort === 'desc' ? 'asc' : 'desc';
+  document.getElementById('sortIcon').textContent = curSort === 'desc' ? '🔽' : '🔼';
+  document.getElementById('sortText').textContent = curSort === 'desc' ? '최신순' : '오래된순';
+  applySort();
+}
+
+function applySort() {
+  // Sort Timeline
+  const container = document.getElementById('vTimeline');
+  const groups = [...container.querySelectorAll('.mg')];
+  groups.sort((a,b) => {
+    const da = a.dataset.y + a.dataset.m;
+    const db = b.dataset.y + b.dataset.m;
+    return curSort === 'desc' ? db.localeCompare(da) : da.localeCompare(db);
+  });
+  groups.forEach(g => {
+    container.appendChild(g);
+    const cards = [...g.querySelectorAll('.card')];
+    cards.sort((a,b) => {
+      const da = a.dataset.notiDate;
+      const db = b.dataset.notiDate;
+      return curSort === 'desc' ? db.localeCompare(da) : da.localeCompare(db);
+    });
+    cards.forEach(c => g.appendChild(c));
+  });
+
+  // Sort Gallery
+  const gGrid = document.querySelector('.gallery-grid');
+  const items = [...gGrid.querySelectorAll('.gi')];
+  items.sort((a,b) => {
+    const da = a.querySelector('.gi-date').innerText;
+    const db = b.querySelector('.gi-date').innerText;
+    return curSort === 'desc' ? db.localeCompare(da) : da.localeCompare(db);
+  });
+  items.forEach(i => gGrid.appendChild(i));
 }
 
 function applyFilter() {
+  // Highlighting regex
+  const regex = curSearch ? new RegExp(curSearch.replace(/[.*+?^$\\{}()|[\\]\\\\]/g, '\\\\$&'), 'gi') : null;
+
   // Timeline
   document.querySelectorAll('.mg').forEach(g => {
     const yOk = curYear === 'all' || g.dataset.y === curYear;
@@ -422,9 +470,27 @@ function applyFilter() {
     
     let gHasMatch = false;
     g.querySelectorAll('.card').forEach(c => {
-      const txt = c.innerText.toLowerCase();
-      const sOk = !curSearch || txt.includes(curSearch);
-      
+      // 1. Search Highlight & Match
+      let sOk = true;
+      if (curSearch) {
+        let textFound = false;
+        c.querySelectorAll('.bubble-text').forEach(el => {
+          const original = MSG_CACHE.get(el.dataset.msgId);
+          if (original.toLowerCase().includes(curSearch)) {
+            textFound = true;
+            el.innerHTML = original.replace(regex, m => '<mark class="highlight">' + m + '</mark>');
+          } else {
+            el.innerText = original;
+          }
+        });
+        const dateTxt = c.querySelector('.card-date').innerText.toLowerCase();
+        if (dateTxt.includes(curSearch)) textFound = true;
+        sOk = textFound;
+      } else {
+        c.querySelectorAll('.bubble-text').forEach(el => el.innerText = MSG_CACHE.get(el.dataset.msgId));
+      }
+
+      // 2. Favorite Match
       let cHasFav = false;
       c.querySelectorAll('.pi').forEach(pi => {
         const btn = pi.querySelector('.fav-btn');
@@ -447,7 +513,8 @@ function applyFilter() {
   document.querySelectorAll('.gi').forEach(g => {
     const yOk = curYear === 'all' || g.dataset.y === curYear;
     const mOk = curMonth === 'all' || g.dataset.m === curMonth;
-    const sOk = !curSearch || (g.dataset.msg && g.dataset.msg.toLowerCase().includes(curSearch));
+    const msg = g.dataset.msg || '';
+    const sOk = !curSearch || msg.toLowerCase().includes(curSearch) || g.querySelector('.gi-date').innerText.includes(curSearch);
     const fOk = !curFavOnly || FAVS.has(g.dataset.url);
     g.style.display = (yOk && mOk && sOk && fOk) ? '' : 'none';
   });
@@ -619,13 +686,17 @@ function cycleSpeed() {
 }
 
 function getFilteredPhotos() {
-  return AP.filter(p => {
+  const photos = AP.filter(p => {
     const yOk = curYear === 'all' || p.date.substring(0,4) === curYear;
     const mOk = curMonth === 'all' || p.date.substring(5,7) === curMonth;
     const sOk = !curSearch || (p.msg && p.msg.toLowerCase().includes(curSearch));
     const fOk = !curFavOnly || FAVS.has(p.src);
     return yOk && mOk && sOk && fOk;
   });
+  photos.sort((a,b) => {
+    return curSort === 'desc' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
+  });
+  return photos;
 }
 
 // INITIALIZATION
