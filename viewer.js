@@ -185,12 +185,16 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all 0.
 .overlay-nav:hover { background: rgba(255,255,255,0.2); color: white; }
 .overlay-nav.left { left: 1rem; }
 .overlay-nav.right { right: 1rem; }
-.overlay-bottom { padding: 1.5rem 2rem; background: linear-gradient(transparent, rgba(0,0,0,0.5)); display: flex; justify-content: space-between; align-items: flex-end; }
-.overlay-info { max-width: 60%; }
+.overlay-bottom { padding: 1.5rem 2rem; background: linear-gradient(transparent, rgba(0,0,0,0.5)); display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 10; }
+.overlay-info { max-width: 80%; position: relative; }
 .overlay-date { font-weight: 700; font-size: 1.1rem; margin-bottom: 0.3rem; }
-.overlay-msg { opacity: 0.7; font-size: 0.9rem; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; transition: all 0.3s; cursor: pointer; }
-.overlay-msg.full { -webkit-line-clamp: unset; display: block; overflow-y: auto; max-height: 40vh; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px; opacity: 1; }
-.msg-more-btn { background: var(--pri); color: white; padding: 4px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; margin-top: 8px; display: inline-block; }
+.overlay-msg { opacity: 0.7; font-size: 0.9rem; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.msg-more-btn { background: rgba(255,255,255,0.1); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; margin-top: 6px; align-self: flex-end; }
+.msg-more-btn:hover { background: rgba(255,255,255,0.2); color: white; }
+.msg-full-layer { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 20; flex-direction: column; overflow-y: auto; padding: 4rem 2rem; align-items: center; }
+.msg-full-layer.open { display: flex; }
+.msg-full-content { max-width: 700px; font-size: 1.1rem; line-height: 1.8; color: #eee; white-space: pre-wrap; }
+.msg-full-close { align-self: flex-end; margin-bottom: 1rem; color: rgba(255,255,255,0.5); font-size: 0.9rem; font-weight: 700; }
 .ss-progress { position: absolute; bottom: 0; left: 0; height: 4px; background: var(--pri); transition: width linear; z-index: 100; }
 .btn-close { font-size: 2rem; opacity: 0.5; background: none; color: white; }
 .btn-close:hover { opacity: 1; }
@@ -319,14 +323,25 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all 0.
   </div>
   <div class="overlay-body">
     <button class="overlay-nav left" onclick="navOverlay(-1)">‹</button>
+    <div id="fullMsgLayer" class="msg-full-layer" onclick="toggleFullMsg()">
+      <button class="msg-full-close">접기 &times;</button>
+      <div id="fullMsgContent" class="msg-full-content"></div>
+    </div>
     <img id="overlayImg" class="overlay-img" src="">
     <button class="overlay-nav right" onclick="navOverlay(1)">›</button>
   </div>
   <div class="overlay-bottom">
-    <div class="overlay-info">
+    <div class="overlay-info" style="display:flex; flex-direction:column;">
       <div class="overlay-date" id="overlayDate"></div>
-      <div class="overlay-msg" id="overlayMsg" onclick="toggleFullMsg()"></div>
-      <button id="msgMoreBtn" class="msg-more-btn hidden" onclick="toggleFullMsg()">메시지 전체보기</button>
+      <div class="overlay-msg" id="overlayMsg"></div>
+      <button id="msgMoreBtn" class="msg-more-btn hidden" onclick="toggleFullMsg()">더보기</button>
+    </div>
+    <div class="overlay-actions">
+       <div id="ssControls" class="hidden" style="display:flex;gap:0.5rem">
+        <button class="vs-btn" id="ssSpeed" onclick="cycleSpeed()" style="width:auto;padding:0 0.8rem;font-size:0.8rem">5초</button>
+        <button class="vs-btn on" id="ssPlayBtn" onclick="togglePlay()">⏸</button>
+      </div>
+      <button class="fav-btn" id="overlayFav" style="position:static;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.3);border:1px solid rgba(255,255,255,0.1)" onclick="handleFav(event, this)">❤</button>
     </div>
   </div>
   <div id="ssProgress" class="ss-progress hidden"></div>
@@ -454,11 +469,8 @@ function setView(v, btn) {
 
 // OVERLAY LOGIC
 function toggleFullMsg() {
-  const msg = document.getElementById('overlayMsg');
-  const btn = document.getElementById('msgMoreBtn');
-  if (!msg.textContent) return;
-  const isFull = msg.classList.toggle('full');
-  btn.textContent = isFull ? '접기' : '메시지 전체보기';
+  const layer = document.getElementById('fullMsgLayer');
+  layer.classList.toggle('open');
 }
 
 function openLB(date, idx) {
@@ -471,9 +483,12 @@ function openLB(date, idx) {
 }
 function openLBG(ai) {
   overlayMode = 'lb';
+  const filtered = getFilteredPhotos();
   const allCards = [...document.querySelectorAll('.gi')].filter(el => el.style.display !== 'none');
-  overlayIdx = allCards.findIndex(el => el.getAttribute('onclick').includes('('+ai+')'));
-  overlayPhotos = getFilteredPhotos();
+  const targetUrl = allCards[ai].dataset.url;
+  overlayIdx = filtered.findIndex(p => p.src === targetUrl);
+  if (overlayIdx < 0) overlayIdx = 0;
+  overlayPhotos = filtered;
   showOverlay();
 }
 
@@ -483,19 +498,22 @@ function showOverlay() {
   
   const img = document.getElementById('overlayImg');
   img.classList.add('fade');
+  document.getElementById('fullMsgLayer').classList.remove('open');
+  
   setTimeout(() => {
     img.src = p.src;
     document.getElementById('overlayCounter').textContent = (overlayIdx + 1) + ' / ' + overlayPhotos.length;
     document.getElementById('overlayDate').textContent = p.date;
     const msgEl = document.getElementById('overlayMsg');
     const moreBtn = document.getElementById('msgMoreBtn');
-    msgEl.textContent = p.msg || '';
-    msgEl.classList.remove('full');
+    const fullContent = document.getElementById('fullMsgContent');
     
-    // Check if message needs "More" button (approximate via length)
-    if (p.msg && p.msg.length > 60) {
+    msgEl.textContent = p.msg || '';
+    fullContent.textContent = p.msg || '';
+    
+    // Check if message is long enough to warrant a more button
+    if (p.msg && p.msg.length > 70) {
       moreBtn.classList.remove('hidden');
-      moreBtn.textContent = '메시지 전체보기';
     } else {
       moreBtn.classList.add('hidden');
     }
@@ -503,6 +521,7 @@ function showOverlay() {
     const ovFav = document.getElementById('overlayFav');
     ovFav.dataset.url = p.src;
     ovFav.classList.toggle('active', FAVS.has(p.src));
+    ovFav.style.color = FAVS.has(p.src) ? 'var(--fav)' : 'rgba(255,255,255,0.3)';
     
     img.onload = () => img.classList.remove('fade');
     document.getElementById('overlay').classList.add('open');
