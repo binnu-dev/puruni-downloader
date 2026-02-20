@@ -67,10 +67,10 @@ function generateHTML(notifications) {
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --pri: #6366f1; --pri-h: #4f46e5; --pri-bg: #eef2ff;
-  --fav: #ef4444; --fav-bg: #fef2f2;
+  --pri: #818cf8; --pri-h: #6366f1; --pri-bg: #eef2ff;
+  --fav: #ff6b6b; --fav-bg: #fff5f5;
   --bg: #f8fafc; --card: #ffffff;
-  --t1: #0f172a; --t2: #475569; --t3: #94a3b8;
+  --t1: #1e293b; --t2: #475569; --t3: #94a3b8;
   --border: #e2e8f0; --r: 20px;
   --sh-sm: 0 1px 2px rgba(0,0,0,0.05);
   --sh: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
@@ -83,11 +83,11 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all 0.
 
 /* HEADER */
 .hero { background-image: linear-gradient(to top, #fbc2eb 0%, #a6c1ee 100%); color: var(--t1); padding: 4rem 1rem 6rem; text-align: center; position: relative; }
-.hero h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.5rem; color: #4f46e5; }
-.hero p { opacity: 0.8; font-weight: 500; font-size: 1.1rem; color: var(--t2); }
+.hero h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 0.5rem; color: #334155; }
+.hero p { opacity: 0.7; font-weight: 500; font-size: 1.1rem; color: #475569; letter-spacing: -0.01em; }
 .stat-chips { display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; }
-.stat-chip { background: rgba(255,255,255,0.5); backdrop-filter: blur(10px); padding: 0.6rem 1.2rem; border-radius: 99px; border: 1px solid rgba(255,255,255,0.3); font-size: 0.9rem; font-weight: 600; color: var(--t2); }
-.stat-chip b { color: #4f46e5; font-weight: 800; margin-right: 2px; }
+.stat-chip { background: rgba(255,255,255,0.4); backdrop-filter: blur(8px); padding: 0.6rem 1.2rem; border-radius: 99px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.85rem; font-weight: 600; color: #475569; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+.stat-chip b { color: #6366f1; font-weight: 800; margin-right: 2px; }
 
 /* MODERN TOOLBAR */
 .toolbar-wrap { position: sticky; top: 0; z-index: 100; margin-top: -3rem; padding: 0 1rem; }
