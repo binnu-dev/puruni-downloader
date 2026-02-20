@@ -175,27 +175,41 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all 0.
 .gi-date { font-size: 0.75rem; font-weight: 600; }
 
 /* LIGHTBOX & SLIDESHOW */
-.overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(10,10,15,0.98); backdrop-filter: blur(10px); flex-direction: column; color: white; }
+/* OVERLAY & SLIDESHOW */
+.overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(10,10,15,0.98); backdrop-filter: blur(25px); flex-direction: column; color: white; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .overlay.open { display: flex; }
-.overlay-top { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; background: rgba(255,255,255,0.03); }
-.overlay-body { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-.overlay-img { max-width: 95vw; max-height: 80vh; object-fit: contain; border-radius: 8px; transition: opacity 0.3s; }
+.overlay-top { display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 2rem; background: linear-gradient(rgba(0,0,0,0.5), transparent); position: absolute; top: 0; left: 0; right: 0; z-index: 50; }
+.overlay-counter { font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.5); letter-spacing: 0.05em; }
+
+.overlay-body { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 4rem 0; }
+.overlay-img { max-width: 95vw; max-height: 85vh; object-fit: contain; border-radius: 4px; transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
 .overlay-img.fade { opacity: 0; }
-.overlay-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: rgba(255,255,255,0.5); z-index: 5; }
-.overlay-nav:hover { background: rgba(255,255,255,0.2); color: white; }
-.overlay-nav.left { left: 1rem; }
-.overlay-nav.right { right: 1rem; }
-.overlay-bottom { padding: 1.5rem 2rem; background: linear-gradient(transparent, rgba(0,0,0,0.5)); display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 10; }
-.overlay-info { max-width: 80%; position: relative; }
-.overlay-date { font-weight: 700; font-size: 1.1rem; margin-bottom: 0.3rem; }
-.overlay-msg { opacity: 0.7; font-size: 0.9rem; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.msg-more-btn { background: rgba(255,255,255,0.1); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; margin-top: 6px; align-self: flex-end; }
-.msg-more-btn:hover { background: rgba(255,255,255,0.2); color: white; }
-.msg-full-layer { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 20; flex-direction: column; overflow-y: auto; padding: 4rem 2rem; align-items: center; }
+
+.overlay-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: rgba(255,255,255,0.4); z-index: 30; }
+.overlay-nav:hover { background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.2); }
+.overlay-nav.left { left: 1.5rem; }
+.overlay-nav.right { right: 1.5rem; }
+
+.overlay-bottom { padding: 2rem 2.5rem 2.5rem; background: linear-gradient(transparent, rgba(0,0,0,0.8)); display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 10; }
+.overlay-info { max-width: 75%; position: relative; }
+.overlay-date { font-weight: 700; font-size: 1.15rem; margin-bottom: 0.4rem; color: white; }
+.overlay-msg { opacity: 0.8; font-size: 0.95rem; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.6; }
+
+.msg-more-btn { background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 6px 14px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; margin-top: 10px; align-self: flex-start; z-index: 100; }
+.msg-more-btn:hover { background: rgba(255,255,255,0.25); transform: translateY(-1px); }
+.msg-more-btn.active { background: white; color: black; }
+
+.msg-full-layer { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 80; flex-direction: column; overflow-y: auto; padding: 6rem 2rem; align-items: center; justify-content: flex-start; backdrop-filter: blur(10px); }
 .msg-full-layer.open { display: flex; }
-.msg-full-content { max-width: 700px; font-size: 1.1rem; line-height: 1.8; color: #eee; white-space: pre-wrap; }
-.msg-full-close { align-self: flex-end; margin-bottom: 1rem; color: rgba(255,255,255,0.5); font-size: 0.9rem; font-weight: 700; }
-.ss-progress { position: absolute; bottom: 0; left: 0; height: 4px; background: var(--pri); transition: width linear; z-index: 100; }
+.msg-full-content { max-width: 700px; font-size: 1.15rem; line-height: 1.9; color: #f8fafc; white-space: pre-wrap; text-align: left; }
+
+.overlay-actions { display: flex; gap: 0.8rem; align-items: center; }
+.ss-speed-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 5px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; }
+.btn-close { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; opacity: 0.4; background: none; color: white; margin-left: 0.5rem; }
+.btn-close:hover { opacity: 1; background: rgba(255,255,255,0.1); border-radius: 50%; }
+
+.ss-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--pri); transition: width linear; z-index: 100; box-shadow: 0 0 10px var(--pri); }
 .btn-close { font-size: 2rem; opacity: 0.5; background: none; color: white; }
 .btn-close:hover { opacity: 1; }
 
@@ -311,20 +325,19 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all 0.
 <!-- OVERLAY (LIGHTBOX/SLIDESHOW) -->
 <div class="overlay" id="overlay">
   <div class="overlay-top">
-    <div id="overlayCounter">0 / 0</div>
+    <div class="overlay-counter" id="overlayCounter">0 / 0</div>
     <div class="overlay-actions">
       <div id="ssControls" class="hidden" style="display:flex;gap:0.5rem">
-        <button class="vs-btn" id="ssSpeed" onclick="cycleSpeed()" style="width:auto;padding:0 0.8rem;font-size:0.8rem">5초</button>
-        <button class="vs-btn on" id="ssPlayBtn" onclick="togglePlay()">⏸</button>
+        <button class="ss-speed-btn" id="ssSpeed" onclick="cycleSpeed()">5초</button>
+        <button class="vs-btn on" id="ssPlayBtn" onclick="togglePlay()" style="width:36px; height:36px;">⏸</button>
       </div>
-      <button class="fav-btn" id="overlayFav" style="position:static;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.3);border:1px solid rgba(255,255,255,0.1)" onclick="handleFav(event, this)">❤</button>
+      <button class="fav-btn" id="overlayFav" style="position:static; width:36px; height:36px; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.3); border:1px solid rgba(255,255,255,0.05)" onclick="handleFav(event, this)">❤</button>
       <button class="btn-close" onclick="closeOverlay()">&times;</button>
     </div>
   </div>
   <div class="overlay-body">
     <button class="overlay-nav left" onclick="navOverlay(-1)">‹</button>
     <div id="fullMsgLayer" class="msg-full-layer" onclick="toggleFullMsg()">
-      <button class="msg-full-close">접기 &times;</button>
       <div id="fullMsgContent" class="msg-full-content"></div>
     </div>
     <img id="overlayImg" class="overlay-img" src="">
@@ -334,14 +347,7 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all 0.
     <div class="overlay-info" style="display:flex; flex-direction:column;">
       <div class="overlay-date" id="overlayDate"></div>
       <div class="overlay-msg" id="overlayMsg"></div>
-      <button id="msgMoreBtn" class="msg-more-btn hidden" onclick="toggleFullMsg()">더보기</button>
-    </div>
-    <div class="overlay-actions">
-       <div id="ssControls" class="hidden" style="display:flex;gap:0.5rem">
-        <button class="vs-btn" id="ssSpeed" onclick="cycleSpeed()" style="width:auto;padding:0 0.8rem;font-size:0.8rem">5초</button>
-        <button class="vs-btn on" id="ssPlayBtn" onclick="togglePlay()">⏸</button>
-      </div>
-      <button class="fav-btn" id="overlayFav" style="position:static;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.3);border:1px solid rgba(255,255,255,0.1)" onclick="handleFav(event, this)">❤</button>
+      <button id="msgMoreBtn" class="msg-more-btn hidden" onclick="toggleFullMsg()">메시지 전체보기</button>
     </div>
   </div>
   <div id="ssProgress" class="ss-progress hidden"></div>
@@ -475,7 +481,10 @@ function setView(v, btn) {
 // OVERLAY LOGIC
 function toggleFullMsg() {
   const layer = document.getElementById('fullMsgLayer');
-  layer.classList.toggle('open');
+  const btn = document.getElementById('msgMoreBtn');
+  const isOpen = layer.classList.toggle('open');
+  btn.textContent = isOpen ? '메시지 닫기' : '메시지 전체보기';
+  btn.classList.toggle('active', isOpen);
 }
 
 function openLB(date, idx) {
@@ -515,8 +524,9 @@ function showOverlay() {
     
     msgEl.textContent = p.msg || '';
     fullContent.textContent = p.msg || '';
+    moreBtn.textContent = '메시지 전체보기';
+    moreBtn.classList.remove('active');
     
-    // Check if message is long enough to warrant a more button
     if (p.msg && p.msg.length > 70) {
       moreBtn.classList.remove('hidden');
     } else {
