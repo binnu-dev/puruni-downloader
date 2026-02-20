@@ -102,10 +102,14 @@ color:var(--t2);font-family:inherit;white-space:nowrap}
 .pill-label{font-size:.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;padding:.35rem .3rem;flex-shrink:0}
 
 /* VIEW BTNS */
-.vbtns{display:flex;background:#e5e7eb;border-radius:10px;padding:2px;flex-shrink:0}
-.vb{padding:.32rem .7rem;border-radius:8px;border:none;cursor:pointer;font-size:.74rem;font-weight:500;
-font-family:inherit;color:var(--t2);background:transparent;transition:all .2s;white-space:nowrap}
 .vb.on{background:#fff;color:var(--pri);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+
+/* SEARCH */
+.search-box{flex:1;min-width:180px;position:relative}
+.search-box input{width:100%;padding:.4rem .7rem .4rem 2rem;border-radius:10px;border:1.5px solid var(--border);
+  font-family:inherit;font-size:.8rem;transition:all .2s;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%239ca3af' viewBox='0 0 256 256'%3E%3Cpath d='M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z'%3E%3C/path%3E%3C/svg%3E") no-repeat .6rem center}
+.search-box input:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px var(--pri-g)}
+.search-box input::placeholder{color:var(--t3)}
 
 /* MAIN */
 .main{max-width:960px;margin:0 auto;padding:1.2rem 1rem 5rem}
@@ -239,6 +243,9 @@ display:flex;align-items:center;justify-content:center}
         <button class="pill on" onclick="pickYear('all',this)">전체</button>
         ${yearKeys.map(y => `<button class="pill" onclick="pickYear('${y}',this)">${y}년</button>`).join('')}
       </div>
+      <div class="search-box">
+        <input type="text" placeholder="메시지 검색..." oninput="onSearch(this.value)">
+      </div>
       <div class="vbtns">
         <button class="vb on" data-v="timeline" onclick="setView('timeline',this)">📋</button>
         <button class="vb" data-v="gallery" onclick="setView('gallery',this)">🖼️</button>
@@ -285,7 +292,7 @@ display:flex;align-items:center;justify-content:center}
   <!-- GALLERY -->
   <div id="vGallery" class="hidden">
     <div class="gal-grid">${allPhotos.map((p, i) =>
-    `<div class="gi" data-y="${p.date.substring(0, 4)}" data-m="${p.date.substring(5, 7)}" onclick="openLBG(${i})"><img src="${p.src}" loading="lazy"><div class="gd">${p.date.slice(5)}</div></div>`
+    `<div class="gi" data-y="${p.date.substring(0, 4)}" data-m="${p.date.substring(5, 7)}" data-msg="${esc(p.msg || '')}" onclick="openLBG(${i})"><img src="${p.src}" loading="lazy"><div class="gd">${p.date.slice(5)}</div></div>`
   ).join('')}</div>
   </div>
 </div>
@@ -332,7 +339,13 @@ const PD=${JSON.stringify(notifications.reduce((a, n) => { a[n.date] = n.photos;
 const AP=${JSON.stringify(allPhotos)};
 const YEARS=${JSON.stringify(years, null, 0)};
 
-let curYear='all', curMonth='all', curView='timeline';
+let curYear='all', curMonth='all', curView='timeline', curSearch='';
+
+// ── SEARCH ──
+function onSearch(val) {
+  curSearch = val.toLowerCase().trim();
+  applyFilter();
+}
 
 // ── YEAR / MONTH FILTER ──
 function pickYear(y, btn) {
@@ -370,13 +383,24 @@ function applyFilter() {
   document.querySelectorAll('.mg').forEach(g=>{
     const yOk=curYear==='all'||g.dataset.y===curYear;
     const mOk=curMonth==='all'||g.dataset.m===curMonth;
-    g.style.display=(yOk&&mOk)?'':'none';
+    
+    let gHasMatch = false;
+    g.querySelectorAll('.card').forEach(c => {
+      const txt = c.innerText.toLowerCase();
+      const sOk = !curSearch || txt.includes(curSearch);
+      c.classList.toggle('hidden', !sOk);
+      if (sOk) gHasMatch = true;
+    });
+
+    g.style.display=(yOk&&mOk&&gHasMatch)?'':'none';
   });
   // Gallery
+  const visArray = [];
   document.querySelectorAll('.gi').forEach(g=>{
     const yOk=curYear==='all'||g.dataset.y===curYear;
     const mOk=curMonth==='all'||g.dataset.m===curMonth;
-    g.style.display=(yOk&&mOk)?'':'none';
+    const sOk=!curSearch || (g.dataset.msg && g.dataset.msg.toLowerCase().includes(curSearch));
+    g.style.display=(yOk&&mOk&&sOk)?'':'none';
   });
 }
 
@@ -416,7 +440,8 @@ function getFilteredPhotos(){
   return AP.filter(p=>{
     const yOk=curYear==='all'||p.date.substring(0,4)===curYear;
     const mOk=curMonth==='all'||p.date.substring(5,7)===curMonth;
-    return yOk&&mOk;
+    const sOk=!curSearch || (p.msg && p.msg.toLowerCase().includes(curSearch));
+    return yOk&&mOk&&sOk;
   });
 }
 function startSlideshow(){
