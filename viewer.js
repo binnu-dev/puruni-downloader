@@ -67,14 +67,14 @@ function generateHTML(notifications) {
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --pri: #818cf8; --pri-h: #6366f1; --pri-bg: #eef2ff;
-  --fav: #ff6b6b; --fav-bg: #fff5f5;
-  --bg: #f8fafc; --card: #ffffff;
-  --t1: #1e293b; --t2: #475569; --t3: #94a3b8;
-  --border: #e2e8f0; --r: 20px;
-  --sh-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --sh: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
-  --sh-lg: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+  --pri: #9297e0; --pri-h: #818cf8; --pri-bg: #f0f1ff;
+  --fav: #ff8585; --fav-bg: #fff5f5;
+  --bg: #f8f9fc; --card: #ffffff;
+  --t1: #4a4e69; --t2: #6b7280; --t3: #9ca3af;
+  --border: #eef0f5; --r: 22px;
+  --sh-sm: 0 1px 2px rgba(0,0,0,0.03);
+  --sh: 0 10px 15px -3px rgba(100,100,150,0.05);
+  --sh-lg: 0 20px 25px -5px rgba(100,100,150,0.08);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; outline-color: var(--pri); }
@@ -82,12 +82,12 @@ body { font-family: 'Outfit', 'Noto Sans KR', sans-serif; background: var(--bg);
 button { font-family: inherit; cursor: pointer; border: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 
 /* HEADER */
-.hero { background-image: linear-gradient(to top, #fbc2eb 0%, #a6c1ee 100%); color: var(--t1); padding: 4rem 1rem 6rem; text-align: center; position: relative; }
-.hero h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 0.5rem; color: #334155; }
-.hero p { opacity: 0.7; font-weight: 500; font-size: 1.1rem; color: #475569; letter-spacing: -0.01em; }
-.stat-chips { display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; }
-.stat-chip { background: rgba(255,255,255,0.4); backdrop-filter: blur(8px); padding: 0.6rem 1.2rem; border-radius: 99px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.85rem; font-weight: 600; color: #475569; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
-.stat-chip b { color: #6366f1; font-weight: 800; margin-right: 2px; }
+.hero { background-image: linear-gradient(120deg, #fbc2eb 0%, #a6c1ee 100%); color: var(--t1); padding: 5rem 1rem 7rem; text-align: center; position: relative; }
+.hero h1 { font-size: 2.8rem; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 0.6rem; color: #4a4e69; }
+.hero p { opacity: 0.8; font-weight: 500; font-size: 1.15rem; color: #6b7280; letter-spacing: -0.01em; }
+.stat-chips { display: flex; justify-content: center; gap: 1.2rem; margin-top: 2.5rem; }
+.stat-chip { background: rgba(255,255,255,0.45); backdrop-filter: blur(12px); padding: 0.7rem 1.4rem; border-radius: 99px; border: 1px solid rgba(255,255,255,0.4); font-size: 0.85rem; font-weight: 600; color: #6b7280; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+.stat-chip b { color: #818cf8; font-weight: 800; }
 
 /* MODERN TOOLBAR */
 .toolbar-wrap { position: sticky; top: 0; z-index: 100; margin-top: -3rem; padding: 0 1rem; }
@@ -188,12 +188,12 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all 0.
 .overlay-bottom { padding: 1.5rem 2rem; background: linear-gradient(transparent, rgba(0,0,0,0.5)); display: flex; justify-content: space-between; align-items: flex-end; }
 .overlay-info { max-width: 60%; }
 .overlay-date { font-weight: 700; font-size: 1.1rem; margin-bottom: 0.3rem; }
-.overlay-msg { opacity: 0.7; font-size: 0.9rem; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.overlay-actions { display: flex; gap: 1rem; align-items: center; }
+.overlay-msg { opacity: 0.7; font-size: 0.9rem; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; transition: all 0.3s; cursor: pointer; }
+.overlay-msg.full { -webkit-line-clamp: unset; display: block; overflow-y: auto; max-height: 40vh; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px; opacity: 1; }
+.msg-more-btn { background: var(--pri); color: white; padding: 4px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; margin-top: 8px; display: inline-block; }
+.ss-progress { position: absolute; bottom: 0; left: 0; height: 4px; background: var(--pri); transition: width linear; z-index: 100; }
 .btn-close { font-size: 2rem; opacity: 0.5; background: none; color: white; }
 .btn-close:hover { opacity: 1; }
-
-.ss-progress { position: absolute; bottom: 0; left: 0; height: 4px; background: var(--pri); transition: width linear; z-index: 100; }
 
 .hidden { display: none !important; }
 .to-top { position: fixed; bottom: 2rem; right: 2rem; width: 54px; height: 54px; border-radius: 50%; background: white; color: var(--pri); border: 1px solid var(--border); box-shadow: var(--sh-lg); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; z-index: 50; opacity: 0; transform: translateY(10px); transition: all 0.3s; }
@@ -325,7 +325,8 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all 0.
   <div class="overlay-bottom">
     <div class="overlay-info">
       <div class="overlay-date" id="overlayDate"></div>
-      <div class="overlay-msg" id="overlayMsg"></div>
+      <div class="overlay-msg" id="overlayMsg" onclick="toggleFullMsg()"></div>
+      <button id="msgMoreBtn" class="msg-more-btn hidden" onclick="toggleFullMsg()">메시지 전체보기</button>
     </div>
   </div>
   <div id="ssProgress" class="ss-progress hidden"></div>
@@ -452,6 +453,14 @@ function setView(v, btn) {
 }
 
 // OVERLAY LOGIC
+function toggleFullMsg() {
+  const msg = document.getElementById('overlayMsg');
+  const btn = document.getElementById('msgMoreBtn');
+  if (!msg.textContent) return;
+  const isFull = msg.classList.toggle('full');
+  btn.textContent = isFull ? '접기' : '메시지 전체보기';
+}
+
 function openLB(date, idx) {
   overlayMode = 'lb';
   overlayPhotos = getFilteredPhotos();
@@ -478,7 +487,18 @@ function showOverlay() {
     img.src = p.src;
     document.getElementById('overlayCounter').textContent = (overlayIdx + 1) + ' / ' + overlayPhotos.length;
     document.getElementById('overlayDate').textContent = p.date;
-    document.getElementById('overlayMsg').textContent = p.msg || '';
+    const msgEl = document.getElementById('overlayMsg');
+    const moreBtn = document.getElementById('msgMoreBtn');
+    msgEl.textContent = p.msg || '';
+    msgEl.classList.remove('full');
+    
+    // Check if message needs "More" button (approximate via length)
+    if (p.msg && p.msg.length > 60) {
+      moreBtn.classList.remove('hidden');
+      moreBtn.textContent = '메시지 전체보기';
+    } else {
+      moreBtn.classList.add('hidden');
+    }
     
     const ovFav = document.getElementById('overlayFav');
     ovFav.dataset.url = p.src;
