@@ -380,6 +380,9 @@ let overlayMode = 'lb'; // 'lb' or 'ss'
 let overlayIdx = 0;
 let overlayPhotos = [];
 
+// UTILS
+const rEsc = s => s.replace(/[.*+?^$|{}()|[\\\]\\]/g, '\\$&');
+
 // CACHE FOR HIGHLIGHTING
 const MSG_CACHE = new Map();
 document.querySelectorAll('.bubble-text').forEach((el, i) => {
@@ -404,18 +407,20 @@ function handleFav(e, btn) {
 
 function updateHeartUI(url) {
   const isActive = FAVS.has(url);
-  document.querySelectorAll(\`.fav-btn[data-url="\${url}"]\`).forEach(b => {
-    b.classList.toggle('active', isActive);
-    b.classList.add('pulse');
-    setTimeout(() => b.classList.remove('pulse'), 400);
+  // Safer selector using attribute mapping instead of template literal interpolation
+  document.querySelectorAll('.fav-btn').forEach(b => {
+    if (b.dataset.url === url) {
+      b.classList.toggle('active', isActive);
+      b.classList.add('pulse');
+      setTimeout(() => b.classList.remove('pulse'), 400);
+    }
   });
   
   // Update Overlay Heart
   const ovFav = document.getElementById('overlayFav');
   if (ovFav.dataset.url === url) {
     ovFav.classList.toggle('active', isActive);
-    if (isActive) ovFav.style.color = 'var(--fav)';
-    else ovFav.style.color = 'rgba(255,255,255,0.3)';
+    ovFav.style.color = isActive ? 'var(--fav)' : 'rgba(255,255,255,0.3)';
   }
 
   if (curFavOnly) applyFilter();
@@ -460,8 +465,7 @@ function applySort() {
 }
 
 function applyFilter() {
-  // Highlighting regex
-  const regex = curSearch ? new RegExp(curSearch.replace(/[.*+?^$\\{}()|[\\]\\\\]/g, '\\\\$&'), 'gi') : null;
+  const regex = curSearch ? new RegExp(rEsc(curSearch), 'gi') : null;
 
   // Timeline
   document.querySelectorAll('.mg').forEach(g => {
@@ -476,10 +480,10 @@ function applyFilter() {
         let textFound = false;
         c.querySelectorAll('.bubble-text').forEach(el => {
           const original = MSG_CACHE.get(el.dataset.msgId);
-          if (original.toLowerCase().includes(curSearch)) {
+          if (original && original.toLowerCase().includes(curSearch)) {
             textFound = true;
             el.innerHTML = original.replace(regex, m => '<mark class="highlight">' + m + '</mark>');
-          } else {
+          } else if (original) {
             el.innerText = original;
           }
         });
@@ -487,7 +491,10 @@ function applyFilter() {
         if (dateTxt.includes(curSearch)) textFound = true;
         sOk = textFound;
       } else {
-        c.querySelectorAll('.bubble-text').forEach(el => el.innerText = MSG_CACHE.get(el.dataset.msgId));
+        c.querySelectorAll('.bubble-text').forEach(el => {
+          const original = MSG_CACHE.get(el.dataset.msgId);
+          if (original) el.innerText = original;
+        });
       }
 
       // 2. Favorite Match
@@ -514,7 +521,8 @@ function applyFilter() {
     const yOk = curYear === 'all' || g.dataset.y === curYear;
     const mOk = curMonth === 'all' || g.dataset.m === curMonth;
     const msg = g.dataset.msg || '';
-    const sOk = !curSearch || msg.toLowerCase().includes(curSearch) || g.querySelector('.gi-date').innerText.includes(curSearch);
+    const date = g.querySelector('.gi-date').innerText;
+    const sOk = !curSearch || msg.toLowerCase().includes(curSearch) || date.includes(curSearch);
     const fOk = !curFavOnly || FAVS.has(g.dataset.url);
     g.style.display = (yOk && mOk && sOk && fOk) ? '' : 'none';
   });
@@ -537,10 +545,12 @@ function pickMonth(m, btn) {
 }
 function buildMonthPills() {
   const mp = document.getElementById('monthPills');
-  let html = '<button class="pill on" onclick="pickMonth(\\'all\\', this)">전체</button>';
+  let html = '<button class="pill on" onclick="pickMonth(\'all\', this)">전체</button>';
   const target = (curYear === 'all') ? Object.values(YEARS).reduce((a, v) => ({...a, ...v}), {}) : YEARS[curYear];
-  Object.keys(target || {}).sort().reverse().forEach(m => {
-    html += \`<button class="pill" onclick="pickMonth('\${m}', this)">\${parseInt(m)}월</button>\`;
+  const months = Object.keys(target || {}).sort();
+  if (curSort === 'desc') months.reverse();
+  months.forEach(m => {
+    html += '<button class="pill" onclick="pickMonth(\'' + m + '\', this)">' + parseInt(m) + '월</button>';
   });
   mp.innerHTML = html;
 }
