@@ -23,6 +23,13 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const http = require('http');
+const readline = require('readline');
+
+// ─── User Prompt Utility ───
+function prompt(question) {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    return new Promise(resolve => rl.question(question, ans => { rl.close(); resolve(ans.trim()); }));
+}
 
 // ─── Parse CLI Arguments ───
 function parseArgs() {
@@ -224,21 +231,77 @@ async function main() {
                 };
             });
 
-            console.log('   📌 감지된 반 목록:');
-            detected.classes.forEach(c => console.log(`      ${c.name} (${c.value})`));
-            console.log('   📌 감지된 원아:');
-            detected.children.forEach(c => console.log(`      ${c.name} (${c.value})`));
-
-            if (!CONFIG.classCd) CONFIG.classCd = detected.selectedClass || detected.classes[0]?.value;
-            if (!CONFIG.childKey) CONFIG.childKey = detected.selectedChild || detected.children[0]?.value;
-
-            if (!CONFIG.classCd || !CONFIG.childKey) {
-                console.log('   ❌ 반/원아 정보를 감지할 수 없습니다. --class, --child 파라미터를 직접 지정해주세요.');
-                await browser.close();
-                return;
+            // ── Select class (반) ──
+            if (!CONFIG.classCd) {
+                if (detected.classes.length === 0) {
+                    console.log('   ❌ 반 정보를 찾을 수 없습니다.');
+                    await browser.close();
+                    return;
+                } else if (detected.classes.length === 1) {
+                    CONFIG.classCd = detected.classes[0].value;
+                    console.log(`   🏫 반: ${detected.classes[0].name} (자동 선택)`);
+                } else {
+                    console.log('');
+                    console.log('   🏫 반을 선택해주세요:');
+                    detected.classes.forEach((c, i) => console.log(`      ${i + 1}. ${c.name}`));
+                    console.log('');
+                    const classChoice = await prompt('   번호 입력: ');
+                    const classIdx = parseInt(classChoice) - 1;
+                    if (classIdx >= 0 && classIdx < detected.classes.length) {
+                        CONFIG.classCd = detected.classes[classIdx].value;
+                        console.log(`   ✅ ${detected.classes[classIdx].name} 선택됨`);
+                    } else {
+                        CONFIG.classCd = detected.selectedClass || detected.classes[0].value;
+                        console.log(`   ✅ ${detected.classes[0].name} 자동 선택됨`);
+                    }
+                }
             }
 
-            // Navigate with detected values
+            // Reload page with selected class to get correct children list
+            notiListUrl = `${CONFIG.baseUrl}/${CONFIG.centerFlag}/_story/noti_list/1?ndate=&classCd=${CONFIG.classCd}&childkey=`;
+            await page.goto(notiListUrl, { waitUntil: 'networkidle', timeout: 30000 });
+            await sleep(2000);
+
+            // Re-detect children for the selected class
+            const childrenForClass = await page.evaluate(() => {
+                const childkeyEl = document.querySelector('#childkey');
+                const children = [];
+                if (childkeyEl) {
+                    Array.from(childkeyEl.options).forEach(opt => {
+                        if (opt.value) children.push({ value: opt.value, name: opt.text });
+                    });
+                }
+                return { selected: childkeyEl ? childkeyEl.value : '', children };
+            });
+
+            // ── Select child (원아) ──
+            if (!CONFIG.childKey) {
+                const kids = childrenForClass.children;
+                if (kids.length === 0) {
+                    console.log('   ❌ 원아 정보를 찾을 수 없습니다.');
+                    await browser.close();
+                    return;
+                } else if (kids.length === 1) {
+                    CONFIG.childKey = kids[0].value;
+                    console.log(`   👶 원아: ${kids[0].name} (자동 선택)`);
+                } else {
+                    console.log('');
+                    console.log('   👶 아이를 선택해주세요:');
+                    kids.forEach((c, i) => console.log(`      ${i + 1}. ${c.name}`));
+                    console.log('');
+                    const childChoice = await prompt('   번호 입력: ');
+                    const childIdx = parseInt(childChoice) - 1;
+                    if (childIdx >= 0 && childIdx < kids.length) {
+                        CONFIG.childKey = kids[childIdx].value;
+                        console.log(`   ✅ ${kids[childIdx].name} 선택됨`);
+                    } else {
+                        CONFIG.childKey = childrenForClass.selected || kids[0].value;
+                        console.log(`   ✅ ${kids[0].name} 자동 선택됨`);
+                    }
+                }
+            }
+
+            // Navigate with final selected values
             notiListUrl = `${CONFIG.baseUrl}/${CONFIG.centerFlag}/_story/noti_list/1?ndate=&classCd=${CONFIG.classCd}&childkey=${CONFIG.childKey}`;
             await page.goto(notiListUrl, { waitUntil: 'networkidle', timeout: 30000 });
             await sleep(2000);
