@@ -5,11 +5,12 @@
  * ╚══════════════════════════════════════════════════════╝
  * 
  * 사용법:
- *   node scraper.js --id=아이디 --pw=비밀번호
+ *   node scraper.js --id=아이디 --pw=비밀번호 --center=어린이집코드
  * 
  * 옵션:
  *   --id        : 푸르니 로그인 아이디 (필수)
  *   --pw        : 푸르니 로그인 비밀번호 (필수)
+ *   --center    : 어린이집 코드 (필수, URL에서 확인: www.puruni.com/여기부분)
  *   --child     : childkey (기본값: 자동 감지)
  *   --class     : classCd (기본값: 자동 감지)
  *   --output    : 저장 폴더 (기본값: ./downloaded)
@@ -48,6 +49,7 @@ const args = parseArgs();
 const CONFIG = {
     userId: args.id || '',
     userPw: args.pw || '',
+    centerFlag: args.center || '',
     childKey: args.child || '',
     classCd: args.class || '',
     outputDir: args.output || './downloaded',
@@ -55,15 +57,16 @@ const CONFIG = {
     startPage: parseInt(args.start) || 1,
     endPage: parseInt(args.end) || 0,  // 0 = auto-detect
     baseUrl: 'https://www.puruni.com',
-    centerFlag: 'gmk',
 };
 
-if (!CONFIG.userId || !CONFIG.userPw) {
-    console.error('❌ 사용법: node scraper.js --id=아이디 --pw=비밀번호');
+if (!CONFIG.userId || !CONFIG.userPw || !CONFIG.centerFlag) {
+    console.error('❌ 사용법: node scraper.js --id=아이디 --pw=비밀번호 --center=어린이집코드');
+    console.error('');
+    console.error('어린이집코드는 푸르니 알림장 주소에서 확인할 수 있습니다:');
+    console.error('  예) www.puruni.com/gmk  →  어린이집코드 = gmk');
+    console.error('  예) www.puruni.com/abc  →  어린이집코드 = abc');
     console.error('');
     console.error('옵션:');
-    console.error('  --child=74847           원아 키 (기본: 자동 감지)');
-    console.error('  --class=14267587916477  반 코드 (기본: 자동 감지)');
     console.error('  --output=./downloaded   저장 폴더');
     console.error('  --headless=true         브라우저 숨김 모드');
     console.error('  --start=1              시작 페이지');

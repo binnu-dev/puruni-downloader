@@ -55,12 +55,22 @@ REM ─── Step 3: 로그인 정보 입력 ───
 echo.
 echo ╔══════════════════════════════════════════════════════╗
 echo ║  푸르니 로그인 정보를 입력해주세요                    ║
-echo ║  (purunicare.com 에서 사용하는 아이디/비밀번호)       ║
 echo ╚══════════════════════════════════════════════════════╝
 echo.
+echo    [어린이집 코드 찾는 법]
+echo    푸르니 알림장 주소가 www.puruni.com/gmk 이면
+echo    어린이집 코드는 gmk 입니다.
+echo.
 
+set /p PURUNI_CENTER="   🏫 어린이집 코드: "
 set /p PURUNI_ID="   👤 아이디: "
 set /p PURUNI_PW="   🔑 비밀번호: "
+
+if "%PURUNI_CENTER%"=="" (
+    echo ❌ 어린이집 코드를 입력해주세요!
+    pause
+    exit /b 1
+)
 
 if "%PURUNI_ID%"=="" (
     echo ❌ 아이디를 입력해주세요!
@@ -84,7 +94,7 @@ echo ║  ⚠️  완료될 때까지 이 창을 닫지 마세요!              
 echo ╚══════════════════════════════════════════════════════╝
 echo.
 
-node scraper.js --id=%PURUNI_ID% --pw="%PURUNI_PW%" --headless=true
+node scraper.js --id=%PURUNI_ID% --pw="%PURUNI_PW%" --center=%PURUNI_CENTER% --headless=true
 
 if %errorlevel% neq 0 (
     echo.
