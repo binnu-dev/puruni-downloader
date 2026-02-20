@@ -60,7 +60,7 @@ function generateHTML(notifications) {
   const allPhotos = [];
   notifications.forEach(n => n.photos.forEach(p => allPhotos.push({ src: p, date: n.date, msg: n.teacherMessage })));
 
-  return `<!DOCTYPE html>
+  const initialRenderHTML = `<!DOCTYPE html>
 <html lang="ko"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>📔 푸르니 알림장 PRO</title>
@@ -179,6 +179,14 @@ mark.highlight { background: #ffef3b; }
 .gi:hover .gi-info { opacity: 1; }
 .gi-date { font-size: 0.75rem; font-weight: 600; }
 
+/* SCROLL SENTINEL */
+.scroll-sentinel { display: flex; justify-content: center; align-items: center; min-height: 72px; margin: 1.4rem 0 3.2rem; }
+.sentinel-pill { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.62rem 1.05rem; border-radius: 999px; border: 1px solid var(--border); background: linear-gradient(180deg, #ffffff 0%, #f7f8ff 100%); color: var(--t2); font-size: 0.9rem; font-weight: 600; letter-spacing: -0.01em; box-shadow: var(--sh-sm); }
+.scroll-sentinel.is-loading .sentinel-pill::before { content: '⏳'; animation: sentinelPulse 1.2s ease-in-out infinite; }
+.scroll-sentinel.is-done .sentinel-pill { background: #ffffff; color: #64748b; }
+.scroll-sentinel.is-empty .sentinel-pill { background: #fff7f7; color: #9f1239; border-color: #fecdd3; }
+@keyframes sentinelPulse { 0% { opacity: 0.35; } 50% { opacity: 1; } 100% { opacity: 0.35; } }
+
 /* LIGHTBOX & SLIDESHOW */
 /* OVERLAY & SLIDESHOW */
 .overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(10,10,15,0.98); backdrop-filter: blur(25px); flex-direction: column; color: white; animation: fadeIn 0.3s ease; }
@@ -263,7 +271,7 @@ mark.highlight { background: #ffef3b; }
         <span id="sortIcon">🔽</span> <span id="sortText">최신순</span>
       </button>
       <button class="fav-toggle-btn" id="favFilterBtn" onclick="toggleFavFilter()">
-        <span id="favFilterIcon">🤍</span> <span id="favFilterText">찜한 전용</span>
+        <span id="favFilterIcon">🤍</span> <span id="favFilterText">Favorites</span>
       </button>
     </div>
     <div class="tb-bottom" style="flex-wrap: wrap; height: auto;">
@@ -282,53 +290,18 @@ mark.highlight { background: #ffef3b; }
 
 <main class="main">
   <!-- TIMELINE -->
-  <div id="vTimeline">
-  ${Object.entries(years).sort(([a], [b]) => b.localeCompare(a)).map(([yr, months]) =>
-    Object.entries(months).sort(([a], [b]) => b.localeCompare(a)).map(([mo, notis]) => `
-    <div class="mg" data-y="${yr}" data-m="${mo}">
-      <div class="month-header">
-        <h2>${yr}년 ${parseInt(mo)}월</h2>
-        <span class="count">${notis.length}개의 기록</span>
-      </div>
-      ${notis.map(n => {
-      const d = new Date(n.date + 'T00:00:00');
-      const dw = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
-      const pc = n.photos.length; const gc = pc <= 5 ? `g${pc}` : 'gm';
-      return `
-      <div class="card" data-noti-date="${n.date}">
-        <div class="card-head">
-          <div class="card-date">${n.date.slice(5)} <span class="card-weekday">${dw}요일</span></div>
-          <div class="card-badges">
-            ${pc ? `<span class="badge badge-photo">PHOTO ${pc}</span>` : ''}
-            ${n.teacherMessage ? `<span class="badge badge-msg">MSG</span>` : ''}
-          </div>
-        </div>
-        ${pc ? `<div class="photos ${gc}">${n.photos.map((p, i) => `
-          <div class="pi" onclick="openLB('${n.date}', ${i})">
-            <img src="${p}" loading="lazy">
-            <button class="fav-btn" data-url="${p}" onclick="handleFav(event, this)">❤</button>
-          </div>`).join('')}</div>` : ''}
-        ${n.teacherMessage || n.parentMessage ? `<div class="msgs">
-          ${n.teacherMessage ? `<div class="bubble bubble-teacher"><div class="bubble-label">👩‍🏫 선생님 메시지</div><div class="bubble-text">${esc(n.teacherMessage)}</div></div>` : ''}
-          ${n.parentMessage ? `<div class="bubble bubble-parent"><div class="bubble-label">🏠 가정에서</div><div class="bubble-text">${esc(n.parentMessage)}</div></div>` : ''}
-        </div>` : ''}
-      </div>`;
-    }).join('')}
-    </div>`).join('')
-  ).join('')}
-  </div>
+  <div id="vTimeline"></div>
 
   <!-- GALLERY -->
   <div id="vGallery" class="hidden">
-    <div class="gallery-grid">${allPhotos.map((p, i) => `
-      <div class="gi" data-y="${p.date.substring(0, 4)}" data-m="${p.date.substring(5, 7)}" data-url="${p.src}" data-msg="${esc(p.msg || '')}" onclick="openLBG(${i})">
-        <img src="${p.src}" loading="lazy">
-        <div class="gi-info"><div class="gi-date">${p.date}</div></div>
-        <button class="fav-btn" data-url="${p.src}" onclick="handleFav(event, this)">❤</button>
-      </div>`
-  ).join('')}</div>
+    <div class="gallery-grid" id="vGalleryGrid"></div>
+  </div>
+
+  <div id="scrollSentinel" class="scroll-sentinel is-loading" aria-live="polite">
+    <span class="sentinel-pill">기록을 불러오는 중...</span>
   </div>
 </main>
+
 
 <!-- OVERLAY (LIGHTBOX/SLIDESHOW) -->
 <div class="overlay" id="overlay">
@@ -358,11 +331,6 @@ mark.highlight { background: #ffef3b; }
     </div>
     <div class="overlay-actions">
       <button id="msgMoreBtn" class="msg-more-btn hidden" onclick="toggleFullMsg()">메시지 펼치기</button>
-      <div id="ssControls" class="hidden" style="display:flex;gap:0.5rem">
-        <button class="ss-speed-btn" id="ssSpeed" onclick="cycleSpeed()">5초</button>
-        <button class="vs-btn on" id="ssPlayBtn" onclick="togglePlay()" style="width:36px; height:36px;">⏸</button>
-      </div>
-      <button class="fav-btn" id="overlayFav" style="position:static; width:36px; height:36px; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.3); border:1px solid rgba(255,255,255,0.05)" onclick="handleFav(event, this)">❤</button>
     </div>
   </div>
   <div id="ssProgress" class="ss-progress hidden"></div>
@@ -371,25 +339,35 @@ mark.highlight { background: #ffef3b; }
 <button class="to-top" id="toTop" onclick="window.scrollTo({top:0, behavior:'smooth'})">↑</button>
 
 <script>
-const PD = ${JSON.stringify(notifications.reduce((a, n) => { a[n.date] = n.photos; return a; }, {}))};
-const AP = ${JSON.stringify(allPhotos)};
-const YEARS = ${JSON.stringify(years, null, 0)};
+// JSON payloads are escaped so inline script boundaries stay intact.
+const ALL_NOTIFICATIONS = ${JSON.stringify(notifications).replace(/</g, '\\u003c')};
+const AP = ${JSON.stringify(allPhotos).replace(/</g, '\\u003c')};
+const YEARS = ${JSON.stringify(years, null, 0).replace(/</g, '\\u003c')};
 
 let curYear='all', curMonth='all', curView='timeline', curSearch='', curFavOnly=false, curSort='desc';
 let overlayMode = 'lb'; // 'lb' or 'ss'
 let overlayIdx = 0;
 let overlayPhotos = [];
 
+// Infinite Scroll State
+const CHUNK_SIZE = 20;
+let timelineItems = []; // filtered notifications
+let galleryItems = []; // filtered photos
+let renderedIdx = 0;
+
+// Escape helpers for template literals
+function esc(s) { return s ? s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''; }
+function escAttr(s) { return s ? s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') : ''; }
+
+
 // UTILS
-const rEsc = s => s.replace(/[.*+?^$|{}()|[\\\]\\]/g, '\\$&');
+const rEsc = s => s.replace(/[.*+?^$(){}|[\\\\]\\\\]/g, '\\\\$&');
 
 // CACHE FOR HIGHLIGHTING
 const MSG_CACHE = new Map();
-document.querySelectorAll('.bubble-text').forEach((el, i) => {
-  const id = 'msg-' + i;
-  el.dataset.msgId = id;
-  MSG_CACHE.set(id, el.innerText);
-});
+
+// We map dynamically at render time now, not upfront globally
+
 
 // FAVORITES
 let FAVS = new Set(JSON.parse(localStorage.getItem('puruni_favs') || '[]'));
@@ -434,98 +412,222 @@ function toggleSort() {
 }
 
 function applySort() {
-  // Sort Timeline
-  const container = document.getElementById('vTimeline');
-  const groups = [...container.querySelectorAll('.mg')];
-  groups.sort((a,b) => {
-    const da = a.dataset.y + a.dataset.m;
-    const db = b.dataset.y + b.dataset.m;
-    return curSort === 'desc' ? db.localeCompare(da) : da.localeCompare(db);
-  });
-  groups.forEach(g => {
-    container.appendChild(g);
-    const cards = [...g.querySelectorAll('.card')];
-    cards.sort((a,b) => {
-      const da = a.dataset.notiDate;
-      const db = b.dataset.notiDate;
-      return curSort === 'desc' ? db.localeCompare(da) : da.localeCompare(db);
-    });
-    cards.forEach(c => g.appendChild(c));
-  });
-
-  // Sort Gallery
-  const gGrid = document.querySelector('.gallery-grid');
-  const items = [...gGrid.querySelectorAll('.gi')];
-  items.sort((a,b) => {
-    const da = a.querySelector('.gi-date').innerText;
-    const db = b.querySelector('.gi-date').innerText;
-    return curSort === 'desc' ? db.localeCompare(da) : da.localeCompare(db);
-  });
-  items.forEach(i => gGrid.appendChild(i));
+  applyFilter(); // sorting is now applied during the filter step
 }
 
-function applyFilter() {
+function updateFavFilterUI() {
+  const btn = document.getElementById('favFilterBtn');
+  const icon = document.getElementById('favFilterIcon');
+  const text = document.getElementById('favFilterText');
+  if (!btn || !icon || !text) return;
+  btn.classList.toggle('on', curFavOnly);
+  icon.textContent = curFavOnly ? '❤️' : '🤍';
+  text.textContent = curFavOnly ? 'Favorites Only' : 'Favorites';
+}
+
+function toggleFavFilter() {
+  curFavOnly = !curFavOnly;
+  updateFavFilterUI();
+  applyFilter({ resetScroll: true });
+}
+
+function renderTimelineChunk() {
+  const container = document.getElementById('vTimeline');
+  const endIdx = Math.min(renderedIdx + CHUNK_SIZE, timelineItems.length);
+  
+  // Group by year-month
+  const groupsToRender = {};
+  for(let i = renderedIdx; i < endIdx; i++) {
+    const n = timelineItems[i];
+    const ym = n.date.substring(0,7);
+    if(!groupsToRender[ym]) groupsToRender[ym] = [];
+    groupsToRender[ym].push(n);
+  }
+
   const regex = curSearch ? new RegExp(rEsc(curSearch), 'gi') : null;
 
-  // Timeline
-  document.querySelectorAll('.mg').forEach(g => {
-    const yOk = curYear === 'all' || g.dataset.y === curYear;
-    const mOk = curMonth === 'all' || g.dataset.m === curMonth;
+  Object.entries(groupsToRender).forEach(([ym, notis]) => {
+    let groupEl = container.querySelector(\`.mg[data-ym="\${ym}"]\`);
+    if (!groupEl) {
+      const yr = ym.substring(0,4);
+      const mo = ym.substring(5,7);
+      groupEl = document.createElement('div');
+      groupEl.className = 'mg';
+      groupEl.dataset.ym = ym;
+      groupEl.innerHTML = \`<div class="month-header"><h2>\${yr}년 \${parseInt(mo)}월</h2><span class="count"></span></div><div class="cards-container"></div>\`;
+      container.appendChild(groupEl);
+    }
     
-    let gHasMatch = false;
-    g.querySelectorAll('.card').forEach(c => {
-      // 1. Search Highlight & Match
-      let sOk = true;
-      if (curSearch) {
-        let textFound = false;
-        c.querySelectorAll('.bubble-text').forEach(el => {
-          const original = MSG_CACHE.get(el.dataset.msgId);
-          if (original && original.toLowerCase().includes(curSearch)) {
-            textFound = true;
-            el.innerHTML = original.replace(regex, m => '<mark class="highlight">' + m + '</mark>');
-          } else if (original) {
-            el.innerText = original;
-          }
-        });
-        const dateTxt = c.querySelector('.card-date').innerText.toLowerCase();
-        if (dateTxt.includes(curSearch)) textFound = true;
-        sOk = textFound;
-      } else {
-        c.querySelectorAll('.bubble-text').forEach(el => {
-          const original = MSG_CACHE.get(el.dataset.msgId);
-          if (original) el.innerText = original;
-        });
+    // Total count calculation for header
+    let totalInGroup = timelineItems.filter(x => x.date.startsWith(ym)).length;
+    groupEl.querySelector('.count').textContent = \`\${totalInGroup}개의 기록\`;
+
+    const cardsContainer = groupEl.querySelector('.cards-container');
+    
+    notis.forEach(n => {
+      const d = new Date(n.date + 'T00:00:00');
+      const dw = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+      const pc = n.photos.length; const gc = pc <= 5 ? \`g\${pc}\` : 'gm';
+      
+      let tMsgHtml = '';
+      let pMsgHtml = '';
+
+      if (n.teacherMessage) {
+        let txt = n.teacherMessage;
+        if(regex) txt = txt.replace(regex, m => '<mark class="highlight">' + m + '</mark>');
+        tMsgHtml = \`<div class="bubble bubble-teacher"><div class="bubble-label">👩‍🏫 선생님 메시지</div><div class="bubble-text">\${txt}</div></div>\`;
+      }
+      if (n.parentMessage) {
+        let txt = n.parentMessage;
+        pMsgHtml = \`<div class="bubble bubble-parent"><div class="bubble-label">🏠 가정에서</div><div class="bubble-text">\${esc(txt)}</div></div>\`;
       }
 
-      // 2. Favorite Match
-      let cHasFav = false;
-      c.querySelectorAll('.pi').forEach(pi => {
-        const btn = pi.querySelector('.fav-btn');
-        const url = btn ? btn.dataset.url : '';
-        const isFav = FAVS.has(url);
-        const fOk = !curFavOnly || isFav;
-        pi.classList.toggle('hidden', !fOk);
-        if (isFav) cHasFav = true;
-      });
-
-      const fOk = !curFavOnly || cHasFav;
-      const isVisible = sOk && fOk;
-      c.classList.toggle('hidden', !isVisible);
-      if (isVisible) gHasMatch = true;
+      const cardHtml = \`
+      <div class="card" data-noti-date="\${n.date}">
+        <div class="card-head">
+          <div class="card-date">\${n.date.slice(5)} <span class="card-weekday">\${dw}요일</span></div>
+          <div class="card-badges">
+            \${pc ? \`<span class="badge badge-photo">PHOTO \${pc}</span>\` : ''}
+            \${n.teacherMessage ? \`<span class="badge badge-msg">MSG</span>\` : ''}
+          </div>
+        </div>
+        \${pc ? \`<div class="photos \${gc}">\${n.photos.map((p) => \`
+          <div class="pi" data-url="\${escAttr(p)}" onclick="openLB(this)">
+            <img src="\${escAttr(p)}" loading="lazy">
+            <button class="fav-btn \${FAVS.has(p)?'active':''}" data-url="\${escAttr(p)}" onclick="handleFav(event, this)">❤</button>
+          </div>\`).join('')}</div>\` : ''}
+        \${(n.teacherMessage || n.parentMessage) ? \`<div class="msgs">\${tMsgHtml}\${pMsgHtml}</div>\` : ''}
+      </div>\`;
+      
+      cardsContainer.insertAdjacentHTML('beforeend', cardHtml);
     });
-    g.style.display = (yOk && mOk && gHasMatch) ? '' : 'none';
   });
 
-  // Gallery
-  document.querySelectorAll('.gi').forEach(g => {
-    const yOk = curYear === 'all' || g.dataset.y === curYear;
-    const mOk = curMonth === 'all' || g.dataset.m === curMonth;
-    const msg = g.dataset.msg || '';
-    const date = g.querySelector('.gi-date').innerText;
-    const sOk = !curSearch || msg.toLowerCase().includes(curSearch) || date.includes(curSearch);
-    const fOk = !curFavOnly || FAVS.has(g.dataset.url);
-    g.style.display = (yOk && mOk && sOk && fOk) ? '' : 'none';
-  });
+  renderedIdx = endIdx;
+  updateSentinel();
+}
+
+function renderGalleryChunk() {
+  const container = document.getElementById('vGalleryGrid');
+  const endIdx = Math.min(renderedIdx + CHUNK_SIZE, galleryItems.length);
+  
+  let html = '';
+  for(let i = renderedIdx; i < endIdx; i++) {
+    const p = galleryItems[i];
+    html += \`<div class="gi" data-url="\${escAttr(p.src)}" onclick="openLBG(this)">
+        <img src="\${escAttr(p.src)}" loading="lazy">
+        <div class="gi-info"><div class="gi-date">\${p.date}</div></div>
+        <button class="fav-btn \${FAVS.has(p.src)?'active':''}" data-url="\${escAttr(p.src)}" onclick="handleFav(event, this)">❤</button>
+      </div>\`;
+  }
+  container.insertAdjacentHTML('beforeend', html);
+  
+  renderedIdx = endIdx;
+  updateSentinel();
+}
+
+function updateSentinel() {
+  const sentinel = document.getElementById('scrollSentinel');
+  const pill = sentinel.querySelector('.sentinel-pill');
+  const arr = curView === 'timeline' ? timelineItems : galleryItems;
+  let text = '';
+  let stateClass = 'is-loading';
+
+  if(renderedIdx >= arr.length) {
+    if(arr.length === 0) {
+      text = curSearch ? '검색 결과가 없습니다.' : '기록이 없습니다.';
+      stateClass = 'is-empty';
+    } else {
+      text = '모든 기록을 불러왔습니다.';
+      stateClass = 'is-done';
+    }
+  } else {
+    text = '기록을 불러오는 중...';
+    stateClass = 'is-loading';
+  }
+
+  sentinel.classList.remove('is-loading', 'is-done', 'is-empty');
+  sentinel.classList.add(stateClass);
+  if (pill) pill.textContent = text;
+  else sentinel.textContent = text;
+}
+
+function loadMoreIfSentinelVisible() {
+  const sentinel = document.getElementById('scrollSentinel');
+  if (!sentinel) return;
+
+  // When content is reset while already scrolled down, IO may not fire again.
+  // Fill chunks until sentinel leaves viewport or data is exhausted.
+  let guard = 0;
+  while (guard < 50) {
+    const arr = curView === 'timeline' ? timelineItems : galleryItems;
+    if (renderedIdx >= arr.length) break;
+    const rect = sentinel.getBoundingClientRect();
+    if (rect.top > window.innerHeight + 200) break;
+    if (curView === 'timeline') renderTimelineChunk();
+    else renderGalleryChunk();
+    guard++;
+  }
+}
+
+function applyFilter(opts = {}) {
+  const { resetScroll = false } = opts;
+
+  // 1. Prepare base data
+  timelineItems = [...ALL_NOTIFICATIONS];
+  galleryItems = [...AP];
+  
+  // 2. Filter by Year/Month
+  if(curYear !== 'all') {
+    timelineItems = timelineItems.filter(n => n.date.startsWith(curYear));
+    galleryItems = galleryItems.filter(p => p.date.startsWith(curYear));
+  }
+  if(curMonth !== 'all') {
+    timelineItems = timelineItems.filter(n => n.date.substring(5,7) === curMonth);
+    galleryItems = galleryItems.filter(p => p.date.substring(5,7) === curMonth);
+  }
+
+  // 3. Filter by Keyword
+  if(curSearch) {
+    const s = curSearch.toLowerCase();
+    timelineItems = timelineItems.filter(n => {
+       const msgMatch = n.teacherMessage && n.teacherMessage.toLowerCase().includes(s);
+       const dateMatch = n.date.includes(s);
+       return msgMatch || dateMatch;
+    });
+    galleryItems = galleryItems.filter(p => {
+       return (p.msg && p.msg.toLowerCase().includes(s)) || p.date.includes(s);
+    });
+  }
+
+  // 4. Filter by Favorites
+  if(curFavOnly) {
+    // Timeline card must contain at least one favorite photo
+    timelineItems = timelineItems.filter(n => n.photos.some(p => FAVS.has(p)));
+    
+    // Only keeping the photos that are actually favorited inside timeline items
+    timelineItems = timelineItems.map(n => {
+        return { ...n, photos: n.photos.filter(p => FAVS.has(p)) };
+    });
+    
+    galleryItems = galleryItems.filter(p => FAVS.has(p.src));
+  }
+
+  // 5. Apply Sort
+  timelineItems.sort((a,b) => curSort === 'desc' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date));
+  galleryItems.sort((a,b) => curSort === 'desc' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date));
+
+  // 6. Reset Render State
+  renderedIdx = 0;
+  document.getElementById('vTimeline').innerHTML = '';
+  document.getElementById('vGalleryGrid').innerHTML = '';
+  
+  if (resetScroll) window.scrollTo({ top: 0, behavior: 'auto' });
+
+  if (curView === 'timeline') renderTimelineChunk();
+  else renderGalleryChunk();
+
+  requestAnimationFrame(loadMoreIfSentinelVisible);
 }
 
 function onSearch(val) { curSearch = val.toLowerCase().trim(); applyFilter(); }
@@ -535,31 +637,33 @@ function pickYear(y, btn) {
   document.querySelectorAll('#yearPills .pill').forEach(p => p.classList.remove('on'));
   btn.classList.add('on');
   buildMonthPills();
-  applyFilter();
+  applyFilter({ resetScroll: true });
 }
 function pickMonth(m, btn) {
   curMonth = m;
   document.querySelectorAll('#monthPills .pill').forEach(p => p.classList.remove('on'));
   btn.classList.add('on');
-  applyFilter();
+  applyFilter({ resetScroll: true });
 }
 function buildMonthPills() {
   const mp = document.getElementById('monthPills');
-  let html = '<button class="pill on" onclick="pickMonth(\'all\', this)">전체</button>';
+  let html = '<button class="pill on" onclick="pickMonth(&quot;all&quot;, this)">전체</button>';
   const target = (curYear === 'all') ? Object.values(YEARS).reduce((a, v) => ({...a, ...v}), {}) : YEARS[curYear];
   const months = Object.keys(target || {}).sort();
   if (curSort === 'desc') months.reverse();
   months.forEach(m => {
-    html += '<button class="pill" onclick="pickMonth(\'' + m + '\', this)">' + parseInt(m) + '월</button>';
+    html += '<button class="pill" onclick="pickMonth(&quot;' + m + '&quot;, this)">' + parseInt(m) + '월</button>';
   });
   mp.innerHTML = html;
 }
 
 function setView(v, btn) {
+  if (curView === v) return;
   curView = v;
   document.getElementById('vTimeline').classList.toggle('hidden', v !== 'timeline');
   document.getElementById('vGallery').classList.toggle('hidden', v !== 'gallery');
   document.querySelectorAll('.vs-btn').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  applyFilter({ resetScroll: true });
 }
 
 // OVERLAY LOGIC
@@ -571,19 +675,18 @@ function toggleFullMsg() {
   btn.classList.toggle('active', isOpen);
 }
 
-function openLB(date, idx) {
+function openLB(el) {
   overlayMode = 'lb';
   overlayPhotos = getFilteredPhotos();
-  const currentUrl = PD[date][idx];
+  const currentUrl = (el && el.dataset) ? el.dataset.url : '';
   overlayIdx = overlayPhotos.findIndex(p => p.src === currentUrl);
   if (overlayIdx < 0) overlayIdx = 0;
   showOverlay();
 }
-function openLBG(ai) {
+function openLBG(el) {
   overlayMode = 'lb';
   const filtered = getFilteredPhotos();
-  const allCards = [...document.querySelectorAll('.gi')].filter(el => el.style.display !== 'none');
-  const targetUrl = allCards[ai].dataset.url;
+  const targetUrl = el.dataset.url;
   overlayIdx = filtered.findIndex(p => p.src === targetUrl);
   if (overlayIdx < 0) overlayIdx = 0;
   overlayPhotos = filtered;
@@ -724,13 +827,24 @@ document.addEventListener('keydown', e => {
   }
 });
 
-window.addEventListener('scroll', () => {
-  document.getElementById('toTop').classList.toggle('show', window.scrollY > 500);
-});
+const io = new IntersectionObserver((entries) => {
+  if(entries[0].isIntersecting) {
+    const arr = curView === 'timeline' ? timelineItems : galleryItems;
+    if(renderedIdx < arr.length) {
+      if(curView === 'timeline') renderTimelineChunk();
+      else renderGalleryChunk();
+    }
+  }
+}, { rootMargin: '200px' });
+io.observe(document.getElementById('scrollSentinel'));
 
+// INIT
 buildMonthPills();
+updateFavFilterUI();
+applyFilter();
 </script>
 </body></html>`;
+  return initialRenderHTML;
 }
 
 // SERVER
