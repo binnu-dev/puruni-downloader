@@ -1,5 +1,6 @@
 node_modules/
 downloaded/
 *.png
+!screenshots/*.png
 *.html
 !README.md
