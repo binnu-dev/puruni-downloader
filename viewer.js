@@ -182,8 +182,8 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all 0.
 .overlay-top { display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 2rem; background: linear-gradient(rgba(0,0,0,0.5), transparent); position: absolute; top: 0; left: 0; right: 0; z-index: 50; }
 .overlay-counter { font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.5); letter-spacing: 0.05em; }
 
-.overlay-body { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 4rem 0; }
-.overlay-img { max-width: 95vw; max-height: 85vh; object-fit: contain; border-radius: 4px; transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
+.overlay-body { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2rem 0; }
+.overlay-img { max-width: 95vw; max-height: 88vh; object-fit: contain; border-radius: 4px; transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
 .overlay-img.fade { opacity: 0; }
 
 .overlay-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: rgba(255,255,255,0.4); z-index: 30; }
@@ -191,13 +191,13 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all 0.
 .overlay-nav.left { left: 1.5rem; }
 .overlay-nav.right { right: 1.5rem; }
 
-.overlay-bottom { padding: 2rem 2.5rem 2.5rem; background: linear-gradient(transparent, rgba(0,0,0,0.8)); display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 10; }
-.overlay-info { max-width: 75%; position: relative; }
-.overlay-date { font-weight: 700; font-size: 1.15rem; margin-bottom: 0.4rem; color: white; }
-.overlay-msg { opacity: 0.8; font-size: 0.95rem; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.6; }
+.overlay-bottom { padding: 1.2rem 2rem; background: linear-gradient(transparent, rgba(0,0,0,0.85)); display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 10; }
+.overlay-info { flex: 1; min-width: 0; margin-right: 2rem; }
+.overlay-date { font-weight: 700; font-size: 1rem; margin-bottom: 0.2rem; color: white; display: flex; align-items: center; gap: 0.5rem; }
+.overlay-msg { opacity: 0.7; font-size: 0.85rem; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5; }
 
-.msg-more-btn { background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 6px 14px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; margin-top: 10px; align-self: flex-start; z-index: 100; }
-.msg-more-btn:hover { background: rgba(255,255,255,0.25); transform: translateY(-1px); }
+.msg-more-btn { background: rgba(255,255,255,0.12); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+.msg-more-btn:hover { background: rgba(255,255,255,0.22); }
 .msg-more-btn.active { background: white; color: black; }
 
 .msg-full-layer { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 80; flex-direction: column; overflow-y: auto; padding: 6rem 2rem; align-items: center; justify-content: flex-start; backdrop-filter: blur(10px); }
@@ -344,10 +344,17 @@ button { font-family: inherit; cursor: pointer; border: none; transition: all 0.
     <button class="overlay-nav right" onclick="navOverlay(1)">›</button>
   </div>
   <div class="overlay-bottom">
-    <div class="overlay-info" style="display:flex; flex-direction:column;">
+    <div class="overlay-info">
       <div class="overlay-date" id="overlayDate"></div>
       <div class="overlay-msg" id="overlayMsg"></div>
-      <button id="msgMoreBtn" class="msg-more-btn hidden" onclick="toggleFullMsg()">메시지 전체보기</button>
+    </div>
+    <div class="overlay-actions">
+      <button id="msgMoreBtn" class="msg-more-btn hidden" onclick="toggleFullMsg()">메시지 펼치기</button>
+      <div id="ssControls" class="hidden" style="display:flex;gap:0.5rem">
+        <button class="ss-speed-btn" id="ssSpeed" onclick="cycleSpeed()">5초</button>
+        <button class="vs-btn on" id="ssPlayBtn" onclick="togglePlay()" style="width:36px; height:36px;">⏸</button>
+      </div>
+      <button class="fav-btn" id="overlayFav" style="position:static; width:36px; height:36px; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.3); border:1px solid rgba(255,255,255,0.05)" onclick="handleFav(event, this)">❤</button>
     </div>
   </div>
   <div id="ssProgress" class="ss-progress hidden"></div>
@@ -483,7 +490,7 @@ function toggleFullMsg() {
   const layer = document.getElementById('fullMsgLayer');
   const btn = document.getElementById('msgMoreBtn');
   const isOpen = layer.classList.toggle('open');
-  btn.textContent = isOpen ? '메시지 닫기' : '메시지 전체보기';
+  btn.textContent = isOpen ? '메시지 닫기' : '메시지 펼치기';
   btn.classList.toggle('active', isOpen);
 }
 
@@ -524,7 +531,7 @@ function showOverlay() {
     
     msgEl.textContent = p.msg || '';
     fullContent.textContent = p.msg || '';
-    moreBtn.textContent = '메시지 전체보기';
+    moreBtn.textContent = '메시지 펼치기';
     moreBtn.classList.remove('active');
     
     if (p.msg && p.msg.length > 70) {
