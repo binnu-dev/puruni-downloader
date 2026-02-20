@@ -412,12 +412,17 @@ function applyFilter() {
       const txt = c.innerText.toLowerCase();
       const sOk = !curSearch || txt.includes(curSearch);
       
-      let fOk = true;
-      if (curFavOnly) {
-        fOk = false;
-        c.querySelectorAll('.fav-btn').forEach(b => { if (FAVS.has(b.dataset.url)) fOk = true; });
-      }
+      let cHasFav = false;
+      c.querySelectorAll('.pi').forEach(pi => {
+        const btn = pi.querySelector('.fav-btn');
+        const url = btn ? btn.dataset.url : '';
+        const isFav = FAVS.has(url);
+        const fOk = !curFavOnly || isFav;
+        pi.classList.toggle('hidden', !fOk);
+        if (isFav) cHasFav = true;
+      });
 
+      const fOk = !curFavOnly || cHasFav;
       const isVisible = sOk && fOk;
       c.classList.toggle('hidden', !isVisible);
       if (isVisible) gHasMatch = true;
