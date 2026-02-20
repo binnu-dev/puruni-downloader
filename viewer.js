@@ -647,6 +647,6 @@ server.listen(PORT, () => {
   console.log(`\n╔═══════════════════════════════════════╗`);
   console.log(`║  📔 푸르니 알림장 뷰어 PRO            ║`);
   console.log(`╚═══════════════════════════════════════╝`);
-  console.log(`📋 \${n.length}개 알림 | 📸 \${tp}장 | 📁 \${DATA_DIR}`);
-  console.log(`\n🌐 http://localhost:\${PORT}\n`);
+  console.log(`📋 ${n.length}개 알림 | 📸 ${tp}장 | 📁 ${DATA_DIR}`);
+  console.log(`\n🌐 http://localhost:${PORT}\n`);
 });
