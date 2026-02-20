@@ -82,12 +82,12 @@ body { font-family: 'Outfit', 'Noto Sans KR', sans-serif; background: var(--bg);
 button { font-family: inherit; cursor: pointer; border: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 
 /* HEADER */
-.hero { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; padding: 4rem 1rem 6rem; text-align: center; position: relative; }
-.hero h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
-.hero p { opacity: 0.8; font-weight: 300; font-size: 1.1rem; }
+.hero { background-image: linear-gradient(to top, #fbc2eb 0%, #a6c1ee 100%); color: var(--t1); padding: 4rem 1rem 6rem; text-align: center; position: relative; }
+.hero h1 { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.5rem; color: #4f46e5; }
+.hero p { opacity: 0.8; font-weight: 500; font-size: 1.1rem; color: var(--t2); }
 .stat-chips { display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; }
-.stat-chip { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 0.6rem 1.2rem; border-radius: 99px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.9rem; font-weight: 500; }
-.stat-chip b { color: white; font-weight: 700; margin-right: 2px; }
+.stat-chip { background: rgba(255,255,255,0.5); backdrop-filter: blur(10px); padding: 0.6rem 1.2rem; border-radius: 99px; border: 1px solid rgba(255,255,255,0.3); font-size: 0.9rem; font-weight: 600; color: var(--t2); }
+.stat-chip b { color: #4f46e5; font-weight: 800; margin-right: 2px; }
 
 /* MODERN TOOLBAR */
 .toolbar-wrap { position: sticky; top: 0; z-index: 100; margin-top: -3rem; padding: 0 1rem; }
@@ -369,6 +369,8 @@ function updateHeartUI(url) {
   const ovFav = document.getElementById('overlayFav');
   if (ovFav.dataset.url === url) {
     ovFav.classList.toggle('active', isActive);
+    if (isActive) ovFav.style.color = 'var(--fav)';
+    else ovFav.style.color = 'rgba(255,255,255,0.3)';
   }
 
   if (curFavOnly) applyFilter();
